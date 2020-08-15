@@ -1,0 +1,61 @@
+#wordpress + mariadb + letsencrypt + nginx proxy
+version: '2'
+
+services:
+  wordpress:
+    image: wordpress:latest
+    depends_on:
+     - db
+    restart: always
+    volumes:
+      - wp_data:/var/www/html
+    ports:
+     - "8080:80"
+    environment:
+      WORDPRESS_DB_PASSWORD: SAME_AS_MYSQL_PASSWORD
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: SAME_AS_MYSQL_PASSWORD
+      VIRTUAL_HOST: DOMAIN
+      LETSENCRYPT_HOST: DOMAIN
+      LETSENCRYPT_EMAIL: MAIL
+
+  db:
+    image: mariadb:latest
+    restart: always
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: PASS
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: SAME_AS_WP_PASSWORD
+      MYSQL_PASSWORD: SAME_AS_WP_PASSWORD
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs:/etc/nginx/certs:ro
+    labels:
+      - com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    restart: always
+    volumes:
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/etc/nginx/certs
+    volumes_from:
+      - nginx-proxy:rw
+volumes:
+  certs:
+  html:
+  vhost.d:
+  wp_data:
+  db_data:
