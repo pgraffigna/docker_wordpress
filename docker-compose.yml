@@ -1,6 +1,6 @@
+---
 #wordpress + mariadb + letsencrypt + nginx proxy
 version: '2'
-
 services:
   wordpress:
     image: wordpress:latest
